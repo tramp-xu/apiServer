@@ -9,6 +9,7 @@ import moment from 'moment'
 class Admin {
   constructor () {
     this.register = this.register.bind(this)
+    this.login = this.login.bind(this)
   }
   async register (req, res, next) {
     const {user_name, password, status = 1} = req.body
@@ -17,7 +18,6 @@ class Admin {
     try {
       const admin = await AdminModel.findOne({user_name})
       if (admin) {
-        console.log('该用户已经存在');
         res.send({
           status: 0,
           type: 'USER_HAS_EXIST',
@@ -48,6 +48,58 @@ class Admin {
         message: '注册失败',
       })
     }
+  }
+
+  async login (req, res, next) {
+    const {user_name, password} = req.body
+    const newpassword = this.encryption(password);
+    try {
+      const admin = await AdminModel.findOne({user_name})
+      if (!admin) {
+        res.send({
+          status: 0,
+          type: 'USER_NO_EXIST',
+          message: '账号/密码错误',
+        })
+      } else if (newpassword.toString() != admin.password.toString()) {
+        res.send({
+          status: 0,
+          type: 'ERROR_PASSWORD',
+          message: '账号/密码错误',
+        })
+      } else {
+        res.send({
+          success: '登录成功'
+        })
+      }
+    } catch (err) {
+      res.send({
+        type: 'LOGIN_ADMIN_FAILED',
+        message: '登录失败',
+      })
+    }
+  }
+
+  async search (req, res, next) {
+    const {limit = 10, offset = 0} = req.query;
+    try{
+      const allAdmin = await AdminModel.find({}, '-_id -password').sort({id: -1}).skip(Number(offset)).limit(Number(limit))
+      const count = await AdminModel.count()
+			res.send({
+				status: 1,
+				data: {
+          list: allAdmin,
+          count: count
+        },
+			})
+		}catch(err){
+			console.log('获取超级管理列表失败', err);
+			res.send({
+				status: 0,
+				type: 'ERROR_GET_ADMIN_LIST',
+				message: '获取超级管理列表失败'
+			})
+		}
   }
 
   encryption(password){
