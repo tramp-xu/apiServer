@@ -4,9 +4,67 @@ import path from 'path'
 import cookieParser from 'cookie-parser'
 import logger from 'morgan';
 import router from './routes/index'
+import session from 'express-session'
+import jwt from 'jsonwebtoken'
+import expressJwt from 'express-jwt'
+import config from './config/index'
+
 import './mongodb/db.js';
 
-var app = express();
+const app = express();
+
+// 跨域设置
+app.all('*', (req, res, next) => {
+	res.header("Access-Control-Allow-Origin", req.headers.Origin || req.headers.origin || 'http://localhost:8080');
+	res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+	res.header("Access-Control-Allow-Methods", "PUT,POST,GET,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Credentials", true); //可以带cookies
+	res.header("X-Powered-By", '3.2.1')
+	if (req.method == 'OPTIONS') {
+	  	res.sendStatus(200);
+	} else {
+	    next();
+	}
+});
+
+app.set('superSecret', config.session.secret)
+// 定义签名
+const secret = config.session.secret
+// 生成token
+// const token = jwt.sign({
+//   name: secret,
+// }, secret, {
+//   expiresIn: 60
+// })
+//使用中间件验证token合法性
+app.use(expressJwt({
+  secret: secret
+}).unless({
+  path: ['/api/admin/login', '/api/admin/register']
+}))
+
+//拦截器
+app.use(function (err, req, res, next) {
+  //当token验证失败时会抛出如下错误
+  if (err.name === 'UnauthorizedError') {   
+      //这个需要根据自己的业务逻辑来处理（ 具体的err值 请看下面）
+      res.status(401).send({
+        code: 401,
+        sucess: false,
+        message: 'token 验证失败'
+      });
+  }
+});
+
+// app.set('trust proxy', 1) // trust first proxy
+// app.use(session({
+//   secret: 'keyboard cat',
+//   resave: false,
+//   saveUninitialized: true,
+//   cookie: { 
+//     maxAge: 5000
+//   }
+// }))
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));

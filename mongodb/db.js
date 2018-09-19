@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
 import chalk from 'chalk';
+import config from '../config/index'
 
-const url = 'mongodb://localhost/apiServer'
-mongoose.connect(url);
+const url = config.database
+mongoose.connect(url, {useNewUrlParser: true});
 mongoose.Promise = global.Promise;
 
 const db = mongoose.connection;
@@ -24,5 +25,5 @@ db.on('close', function() {
     console.log(
       chalk.red('数据库断开，重新连接数据库')
     );
-    mongoose.connect(url, {server:{auto_reconnect:true}});
+    mongoose.connect(url, {server:{auto_reconnect:true}, useNewUrlParser: true});
 });

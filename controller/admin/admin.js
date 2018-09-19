@@ -5,6 +5,8 @@ import crypto from 'crypto'
 // 上传文件插件
 // import formidable from 'formidable'
 import moment from 'moment'
+import jwt from 'jsonwebtoken'
+import config from '../../config'
 
 class Admin {
   constructor () {
@@ -20,6 +22,7 @@ class Admin {
       if (admin) {
         res.send({
           status: 0,
+          success: false,
           type: 'USER_HAS_EXIST',
           message: '该用户已经存在',
         })
@@ -37,13 +40,15 @@ class Admin {
         }
         await AdminModel.create(newAdmin)
         res.send({
-          status: 1,
+          code: 200,
+          success: true,
           message: '注册管理员成功',
         })
       }
     } catch (err) {
       res.send({
         status: 0,
+        success: false,
         type: 'REGISTER_ADMIN_FAILED',
         message: '注册失败',
       })
@@ -58,6 +63,7 @@ class Admin {
       if (!admin) {
         res.send({
           status: 0,
+          success: false,
           type: 'USER_NO_EXIST',
           message: '账号/密码错误',
         })
@@ -66,10 +72,18 @@ class Admin {
           status: 0,
           type: 'ERROR_PASSWORD',
           message: '账号/密码错误',
+          success: false
         })
       } else {
+        let token = jwt.sign({admin_id: admin.admin_id}, config.session.secret, {
+          expiresIn: 20
+        })
         res.send({
-          success: '登录成功'
+          code: 200,
+          data: {
+            token: token
+          },
+          success: true
         })
       }
     } catch (err) {
@@ -93,9 +107,9 @@ class Admin {
         },
 			})
 		}catch(err){
-			console.log('获取超级管理列表失败', err);
 			res.send({
-				status: 0,
+        status: 0,
+        success: false,
 				type: 'ERROR_GET_ADMIN_LIST',
 				message: '获取超级管理列表失败'
 			})
