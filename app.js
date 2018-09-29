@@ -4,8 +4,6 @@ import path from 'path'
 import cookieParser from 'cookie-parser'
 import logger from 'morgan';
 import router from './routes/index'
-import session from 'express-session'
-import jwt from 'jsonwebtoken'
 import expressJwt from 'express-jwt'
 import config from './config/index'
 
@@ -30,12 +28,6 @@ app.all('*', (req, res, next) => {
 app.set('superSecret', config.session.secret)
 // 定义签名
 const secret = config.session.secret
-// 生成token
-// const token = jwt.sign({
-//   name: secret,
-// }, secret, {
-//   expiresIn: 60
-// })
 //使用中间件验证token合法性
 app.use(expressJwt({
   secret: secret

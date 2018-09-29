@@ -76,7 +76,7 @@ class Admin {
         })
       } else {
         let token = jwt.sign({admin_id: admin.admin_id}, config.session.secret, {
-          expiresIn: 20
+          expiresIn: 60 * 60 * 3
         })
         res.send({
           code: 200,
