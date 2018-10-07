@@ -25,12 +25,22 @@ app.all('*', (req, res, next) => {
 	}
 });
 
-app.set('superSecret', config.session.secret)
 // 定义签名
 const secret = config.session.secret
 //使用中间件验证token合法性
 app.use(expressJwt({
-  secret: secret
+  secret: secret,
+  credentialsRequired: false,
+  getToken: function fromHeaderOrQuerystring (req) {//自定义getToken 默认有这个函数 
+    let token = null;
+    if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
+        token = req.headers.authorization.split(' ')[1];
+    } else if (req.query && req.query.token) {//支持 get
+        token = req.query.token.split(' ')[1];
+    }
+    console.log("Token %s",token);
+    return token;
+  }
 }).unless({
   path: ['/api/admin/login', '/api/admin/register']
 }))
@@ -38,13 +48,15 @@ app.use(expressJwt({
 //拦截器
 app.use(function (err, req, res, next) {
   //当token验证失败时会抛出如下错误
-  if (err.name === 'UnauthorizedError') {   
+  if (req.method !== 'OPTIONS') {
+    if (err.name === 'UnauthorizedError') {   
       //这个需要根据自己的业务逻辑来处理（ 具体的err值 请看下面）
       res.status(401).send({
         code: 401,
         sucess: false,
         message: 'token 验证失败'
       });
+    }
   }
 });
 
