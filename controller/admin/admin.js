@@ -7,6 +7,7 @@ import crypto from 'crypto'
 import moment from 'moment'
 import jwt from 'jsonwebtoken'
 import config from '../../config'
+import uuid from 'node-uuid'
 
 class Admin {
   constructor () {
@@ -17,7 +18,7 @@ class Admin {
     const {userName, password, status = 1} = req.body
     console.log(req.body);
     // 查询是否被注册
-    try {
+    // try {
       const admin = await AdminModel.findOne({userName})
       if (admin) {
         res.send({
@@ -29,7 +30,7 @@ class Admin {
       } else {
         const adminTip = status === 1 ? '普通用户' : '超级管理员'
         const newpassword = this.encryption(password);
-        const adminId = Md5(moment())
+        const adminId = uuid.v1()
         const newAdmin = {
           userName, 
           password: newpassword, 
@@ -45,14 +46,14 @@ class Admin {
           message: '注册管理员成功',
         })
       }
-    } catch (err) {
-      res.send({
-        status: 0,
-        success: false,
-        type: 'REGISTER_ADMIN_FAILED',
-        message: '注册失败',
-      })
-    }
+    // } catch (err) {
+    //   res.send({
+    //     status: 0,
+    //     success: false,
+    //     type: 'REGISTER_ADMIN_FAILED',
+    //     message: '注册失败',
+    //   })
+    // }
   }
 
   async login (req, res, next) {

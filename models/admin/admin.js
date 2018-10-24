@@ -5,7 +5,7 @@ const Schema = mongoose.Schema
 const adminSchema = new Schema({
   userName: String,
 	password: String,
-	id: Number,
+	id: String,
 	createTime: String,
 	adminTip: {type: String, default: '管理员'},
 	status: Number,  //1:普通管理、 2:超级管理员
