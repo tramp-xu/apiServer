@@ -9,6 +9,11 @@ import jwt from 'jsonwebtoken'
 import config from '../../config'
 import uuid from 'node-uuid'
 
+// 上传头像相关依赖
+import fs from 'fs'
+import formidable from "formidable";
+let cacheFolder = 'public/images/admin'
+
 class Admin {
   constructor () {
     this.register = this.register.bind(this)
@@ -34,7 +39,7 @@ class Admin {
         const newAdmin = {
           userName, 
           password: newpassword, 
-          id: adminId,
+          uid: adminId,
           createTime: moment().format('YYYY-MM-DD'),
           adminTip: adminTip,
           status,
@@ -77,7 +82,7 @@ class Admin {
         })
       } else {
         let token = jwt.sign({adminId: admin.adminId}, config.session.secret, {
-          expiresIn: 10 * 1
+          expiresIn: config.session.cookie.maxAge
         })
 
         res.send({
@@ -98,9 +103,11 @@ class Admin {
   }
 
   async search (req, res, next) {
+    res.setHeader("Cache-Control", "max-age=3")
+    // res.setHeader("Expires", "Sat Nov 03 2018 08:00:00 GMT+0800") 
     const {limit = 10, offset = 0} = req.query;
     try {
-      const allAdmin = await AdminModel.find({}, '-_id -password').sort({id: -1}).skip(Number(offset)).limit(Number(limit))
+      const allAdmin = await AdminModel.find({}, '-_id -password').sort({uid: -1}).skip(Number(offset)).limit(Number(limit))
       const count = await AdminModel.count()
 			res.send({
         success: true,
@@ -118,6 +125,71 @@ class Admin {
 				message: '获取管理员列表失败'
 			})
 		}
+  }
+
+  async uploadAvatar (req, res, next) {
+    let adminDirPath = cacheFolder
+    if (!fs.existsSync(adminDirPath)) {
+      fs.mkdirSync(adminDirPath) // 如不存在此目录, 创建目录
+    }
+
+    let form = new formidable.IncomingForm()
+    form.encoding = 'utf-8'
+    form.uploadDir = adminDirPath
+    form.keepExtensions = true
+    form.maxFieldsSize = 2 * 1024 * 1024
+    form.type = true
+    form.parse(req, (err, fields, files) => {
+      if (err) return res.json(err)
+      let extName = ''
+      switch (files.file.type) {
+        case 'image/pjpeg':
+            extName = 'jpg';
+            break;
+        case 'image/jpeg':
+            extName = 'jpg';
+            break;
+        case 'image/png':
+            extName = 'png';
+            break;
+        case 'image/x-png':
+            extName = 'png';
+            break;
+      }
+      if (extName.length === 0) {
+        res.send({
+          success: false,
+          message: '只支持png和jpg格式图片',
+          type: 'ERROR_FILE_TYPE'
+        })
+      } else {
+        let avatarName = '/' + Date.now() + '.' + extName
+        let newPath = form.uploadDir + avatarName
+        let oldPath = fields.file
+        console.log(oldPath);
+        fs.renameSync(files.file.path, newPath)
+        console.log(newPath);
+        AdminModel.update({uid: req.uid}, {avatar: newPath}, (err, doc) => {
+          if (err) {
+            res.send({
+              success: false,
+              message: '更新头像失败',
+              type: 'ERROR_UPLODE'
+            })
+          } else {
+            let image = fs.readFileSync(newPath).toString("base64")
+            res.send({
+              success: true,
+              message: '更新头像成功',
+              data: {
+                avatar: newPath,
+                file: image
+              }
+            })
+          }
+        })
+      }
+    })
   }
 
   encryption (password) {

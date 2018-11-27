@@ -6,14 +6,22 @@ import logger from 'morgan';
 import router from './routes/index'
 import expressJwt from 'express-jwt'
 import config from './config/index'
-
+import history from 'connect-history-api-fallback'
 import './mongodb/db.js';
-
+// 第三方登录
+import passport from 'passport'
+// import JwtPassport from 'passport-jwt'
 const app = express();
+
+app.use(history())
+
+app.use(passport.initialize());
+// app.use(passport.session());
+// app.use(JwtPassport.jw)
 
 // 跨域设置
 app.all('*', (req, res, next) => {
-	res.header("Access-Control-Allow-Origin", req.headers.Origin || req.headers.origin || 'http://localhost:8080');
+	res.header("Access-Control-Allow-Origin", req.headers.Origin || req.headers.origin || 'http://localhost:8080' || '*');
 	res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
 	res.header("Access-Control-Allow-Methods", "PUT,POST,GET,DELETE,OPTIONS");
   res.header("Access-Control-Allow-Credentials", true); //可以带cookies
@@ -42,7 +50,7 @@ app.use(expressJwt({
     return token;
   }
 }).unless({
-  path: ['/api/admin/login', '/api/admin/register']
+  path: ['/api/admin/login', '/api/admin/register', '/api/third-party/login', '/public/*']
 }))
 
 //拦截器
